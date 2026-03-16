@@ -35,3 +35,7 @@ The app will be running at `http://localhost:3000`.
 
 - **Bun** — runtime & server
 - **Puppeteer** — headless browser for scraping
+
+## License
+
+MIT
