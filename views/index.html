@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pancakes | Tap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@300..900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Sansita+Swashed:wght@300..900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        .pancake-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 0;
+        }
+
+        .pancake-loader__scene {
+            position: relative;
+            width: 180px;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .pancake-loader__plate {
+            position: absolute;
+            bottom: 0;
+            width: 160px;
+            height: 18px;
+            background: #E8E0D4;
+            border-radius: 50%;
+            border-bottom: 4px solid #D4C9BA;
+        }
+
+        .pancake-loader__stack {
+            position: absolute;
+            bottom: 10px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+        }
+
+        .pancake-loader__pancake {
+            width: 120px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #E0A430, #D4952A);
+            border-bottom: 4px solid #B87A1E;
+            margin-top: -6px;
+            opacity: 0;
+            transform: translateY(-100px) scaleX(0.3);
+            animation: pancake-drop 2.6s ease-in-out infinite;
+        }
+
+        .pancake-loader__pancake--1 {
+            animation-delay: 0s;
+        }
+
+        .pancake-loader__pancake--2 {
+            animation-delay: 0.45s;
+            width: 110px;
+        }
+
+        .pancake-loader__pancake--3 {
+            animation-delay: 0.9s;
+            width: 98px;
+        }
+
+        .pancake-loader__butter {
+            position: absolute;
+            bottom: 98px;
+            width: 24px;
+            height: 16px;
+            background: #F5D563;
+            border-radius: 4px;
+            border-bottom: 3px solid #E0BF3A;
+            opacity: 0;
+            transform: translateY(-50px);
+            animation: pancake-drop 2.6s ease-in-out infinite;
+            animation-delay: 1.35s;
+        }
+
+        .pancake-loader__syrup {
+            position: absolute;
+            background: #89551d;
+            border-radius: 0 0 8px 8px;
+            opacity: 0;
+            animation: pancake-drip 2.6s ease-in-out infinite;
+            animation-delay: 1.7s;
+        }
+
+        .pancake-loader__syrup--left {
+            bottom: 52px;
+            left: 44px;
+            width: 8px;
+            height: 0;
+        }
+
+        .pancake-loader__syrup--right {
+            bottom: 58px;
+            right: 42px;
+            width: 7px;
+            height: 0;
+        }
+
+        .pancake-loader__text {
+            margin-top: 2rem;
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+        }
+
+        /* Keyframes */
+
+        @keyframes pancake-drop {
+            0% {
+                opacity: 0;
+                transform: translateY(-100px) scaleX(0.3);
+            }
+
+            8% {
+                opacity: 1;
+            }
+
+            15% {
+                opacity: 1;
+                transform: translateY(5px) scaleX(1.18);
+            }
+
+            22% {
+                transform: translateY(0) scaleX(1);
+            }
+
+            70% {
+                opacity: 1;
+                transform: translateY(0) scaleX(1);
+            }
+
+            85% {
+                opacity: 0;
+                transform: translateY(0) scaleX(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scaleX(0.3);
+            }
+        }
+
+        @keyframes pancake-drip {
+            0% {
+                opacity: 0;
+                height: 0;
+            }
+
+            68% {
+                opacity: 0;
+                height: 0;
+            }
+
+            72% {
+                opacity: 0.9;
+            }
+
+            80% {
+                height: 26px;
+                opacity: 0.9;
+            }
+
+            85% {
+                height: 26px;
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+                height: 0;
+            }
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: "Instrument Sans", system-ui;
+        }
+
+        h1,
+        h2,
+        h3,
+        span {
+            font-family: "Sansita Swashed", system-ui;
+        }
+    </style>
+</head>
+
+<body class="bg-[#F7F6E5] p-8">
+    <header class="flex items-center justify-between">
+        <h1 class="text-2xl">Tap</h1>
+        <p class="text-black/50 hover:text-black cursor-pointer">GitHub</p>
+    </header>
+
+    <main class="w-full min-h-[88dvh] grid place-items-center">
+        <div class="max-w-5xl">
+            <!-- Slide One | Add link -->
+            <div class="space-y-8" data-slide-one>
+                <h2 class="text-3xl">Simply past a link and we'll take it form there (;</h2>
+                <div class="flex items-center justify-center gap-4">
+                    <input type="url" name="link" id="link"
+                        class="border-b-2 text-base px-2 py-3 inline-block w-3/4 outline-0"
+                        placeholder="https://example.com">
+                    <span data-handle-scrape
+                        class="block transition duration-300 text-3xl pt-2 text-black/50 hover:text-black hover:scale-105 cursor-pointer">-></span>
+                </div>
+            </div>
+
+            <!-- Slide Two | Loader -->
+            <div class="hidden" data-slide-two>
+                <div class="pancake-loader">
+                    <div class="pancake-loader__scene">
+                        <div class="pancake-loader__plate"></div>
+                        <div class="pancake-loader__stack">
+                            <div class="pancake-loader__pancake pancake-loader__pancake--1"></div>
+                            <div class="pancake-loader__pancake pancake-loader__pancake--2"></div>
+                            <div class="pancake-loader__pancake pancake-loader__pancake--3"></div>
+                        </div>
+                        <div class="pancake-loader__butter"></div>
+                        <div class="pancake-loader__syrup pancake-loader__syrup--left"></div>
+                        <div class="pancake-loader__syrup pancake-loader__syrup--right"></div>
+                    </div>
+                    <p class="pancake-loader__text">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Slide Three | Result -->
+            <div class="mb-8 hidden" data-slide-three>
+                <div class="w-full flex justify-between items-center mb-6">
+                    <h3 class="text-2xl">Here's what we found</h3>
+                    <p class="text-sm text-black/50 hover:text-black cursor-pointer" data-copy-site-data>Copy</p>
+                </div>
+                <div class="text-sm max-h-[70vh] overflow-scroll">
+                    <code data-scraped-site></code>
+                </div>
+                <span data-navigate-slide-1 class="text-base font-semibold mt-4 block cursor-pointer" style="font-weight: 200;"><span class=" mr-1"><-</span>Try it with another site</span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full">
+        <p class="text-center text-black/70">Made with ❤️ by Pancakes</p>
+    </footer>
+
+    <script>
+        // slides 
+        const slide1 = document.querySelector('[data-slide-one]')
+        const slide2 = document.querySelector('[data-slide-two]')
+        const slide3 = document.querySelector('[data-slide-three]')
+
+        const goToSlide1 = document.querySelector('[data-navigate-slide-1]')
+        goToSlide1.addEventListener('click', () => {
+            slide3.classList.add('hidden')
+            slide1.classList.remove('hidden')
+        })
+
+        // form
+        const handleScrape = document.querySelector('[data-handle-scrape]')
+        const urlInput = document.querySelector('input#link')
+        const result = document.querySelector('[data-scraped-site]')
+
+        handleScrape.addEventListener('click', async () => {
+            const url = urlInput.value
+
+            showLoader()
+            const res = await fetch('/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url })
+            })
+
+            const data = await res.json()
+
+            hideLoader()
+
+            // const result = document.querySelector('[data-scraped-site]')
+            result.innerText = data
+        })
+
+        const showLoader = () => {
+            slide1.classList.add('hidden')
+            slide2.classList.remove('hidden')
+        }
+
+        const hideLoader = () => {
+            slide2.classList.add('hidden')
+            slide3.classList.remove('hidden')
+        }
+        
+        // copy
+        const copy = document.querySelector('[data-copy-site-data]')
+        copy.addEventListener('click', () => {
+            navigator.clipboard.writeText(result.innerText)
+            copy.innerText = 'Copied!'
+            setTimeout(() => {
+                copy.innerText = 'Copy'
+            }, 3000)
+        })
+    </script>
+</body>
+
+</html>
