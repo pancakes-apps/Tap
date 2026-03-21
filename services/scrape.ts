@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer"
+import TurndownService from "turndown"
 
 const scrapeModule = async ( url: string ) => {
     const browser = await puppeteer.launch({
@@ -34,8 +35,15 @@ const scrapeModule = async ( url: string ) => {
     const modifiedHTML = await page.content()
     
     await page.close()
-    
-    return modifiedHTML
+
+    console.log('Converting modified html to markdown')
+    const turndownService = new TurndownService()
+    const modifiedHTMLAsMarkdown = turndownService.turndown(modifiedHTML)
+
+    return {
+        site_data_as_html: modifiedHTML,
+        site_data_as_markdown: modifiedHTMLAsMarkdown,
+    }
 }
 
 export default scrapeModule

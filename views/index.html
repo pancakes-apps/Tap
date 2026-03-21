@@ -242,12 +242,15 @@
             </div>
 
             <!-- Slide Three | Result -->
-            <div class="mb-8 hidden" data-slide-three>
+            <div class="w-full mb-8 hidden" data-slide-three>
                 <div class="w-full flex justify-between items-center mb-6">
                     <h3 class="text-2xl">Here's what we found</h3>
-                    <p class="text-sm text-black/50 hover:text-black cursor-pointer" data-copy-site-data>Copy</p>
+                    <div class="space-x-4">
+                        <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-show-markdown>Show Markdown</p>
+                        <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-copy-site-data>Copy</p>
+                    </div>
                 </div>
-                <div class="text-sm max-h-[70vh] overflow-scroll">
+                <div class="text-sm max-h-[70vh] overflow-scroll" style="scrollbar-color: rgb(106, 106, 106) transparent; scrollbar-width: thin;">
                     <code data-scraped-site></code>
                 </div>
                 <span data-navigate-slide-1 class="text-base font-semibold mt-4 block cursor-pointer" style="font-weight: 200;"><span class=" mr-1"><-</span>Try it with another site</span>
@@ -272,6 +275,7 @@
         })
 
         // form
+        let extractedData = null
         const handleScrape = document.querySelector('[data-handle-scrape]')
         const urlInput = document.querySelector('input#link')
         const result = document.querySelector('[data-scraped-site]')
@@ -292,8 +296,8 @@
 
             hideLoader()
 
-            // const result = document.querySelector('[data-scraped-site]')
-            result.innerText = data
+            extractedData = data
+            result.innerText = extractedData.site_data_as_html
         })
 
         const showLoader = () => {
@@ -314,6 +318,21 @@
             setTimeout(() => {
                 copy.innerText = 'Copy'
             }, 3000)
+        })
+
+        // toggle html and markdown
+        const toggleContent = document.querySelector('[data-show-markdown]')
+        let flag = true
+        toggleContent.addEventListener('click', () => {
+            if (flag) {
+                result.innerText = extractedData.site_data_as_markdown
+                toggleContent.innerText = 'Show HMTL'
+            } else {
+                result.innerText = extractedData.site_data_as_html
+                toggleContent.innerText = 'Show Markdown'
+            }
+
+            flag = !flag
         })
     </script>
 </body>
