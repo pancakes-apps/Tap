@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "scraper",
+      "name": "tap",
       "dependencies": {
         "puppeteer": "^24.38.0",
         "turndown": "^7.2.4",

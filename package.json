@@ -1,5 +1,5 @@
 {
-  "name": "scraper",
+  "name": "tap",
   "module": "index.ts",
   "scripts": {
     "start": "bun index.ts"
