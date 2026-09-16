@@ -201,6 +201,12 @@
         span {
             font-family: "Sansita Swashed", system-ui;
         }
+
+        [data-token-field],
+        [data-quant-field] {
+            opacity: 0;
+            transition: opacity 300ms ease;
+        }
     </style>
 </head>
 
@@ -215,9 +221,17 @@
 
     <main class="w-full min-h-[84dvh] grid place-items-center">
         <div class="max-w-5xl">
-            <!-- Slide One | Add link -->
             <div class="space-y-8" data-slide-one>
                 <h2 class="text-3xl">Simply past a link and we'll take it form there (;</h2>
+
+                <div class="flex items-center justify-center gap-3 text-sm" style="font-family: 'Instrument Sans', system-ui;">
+                    <span class="text-black/50">Normal</span>
+                    <button type="button" data-mode-toggle class="relative w-11 h-6 rounded-full bg-black/20 transition-colors duration-300 cursor-pointer">
+                        <span data-mode-toggle-knob class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 block"></span>
+                    </button>
+                    <span class="text-black/50">LLM Assisted</span>
+                </div>
+
                 <div class="flex items-center justify-center gap-4">
                     <input type="url" name="link" id="link"
                         class="border-b-2 text-base px-2 py-3 inline-block w-3/4 outline-0"
@@ -225,9 +239,39 @@
                     <span data-handle-scrape
                         class="block transition duration-300 text-3xl pt-2 text-black/50 hover:text-black hover:scale-105 cursor-pointer">-></span>
                 </div>
+
+                <div class="hidden space-y-5 max-w-2xl mx-auto" data-llm-fields style="font-family: 'Instrument Sans', system-ui;">
+                    <div class="bg-amber-100 border border-amber-300 text-amber-900 text-sm rounded-lg p-4 text-left">
+                        The model is downloaded straight into this repo's <code>models/</code> folder and runs entirely on this machine — nothing you scrape ever leaves your disk.
+                    </div>
+
+                    <div class="bg-amber-100 border border-amber-300 text-amber-900 text-sm rounded-lg p-4 text-left">
+                        Local inference runs on this machine's own CPU/GPU and RAM — nothing offloaded to a server. Make sure your hardware can actually handle the model you pick: a bigger model needs more memory just to load, and inference time scales with your available resources too, so the same model can take seconds on a strong GPU and minutes on a modest CPU.
+                    </div>
+
+                    <div class="text-left">
+                        <input type="text" data-model-name list="cached-models-list" placeholder="unsloth/LFM2.5-8B-A1B-GGUF"
+                            class="border-b-2 text-base px-2 py-3 outline-0 w-full placeholder:text-gray-400">
+                        <datalist id="cached-models-list" data-cached-models-list></datalist>
+                        <p class="text-xs text-black/40 mt-1">Some models require a Hugging Face token to download.</p>
+                        <p class="text-xs text-black/40 mt-1">The bigger and more capable the model, the better the analysis it can produce.</p>
+                        <p class="text-xs text-red-600 mt-1 hidden" data-model-error></p>
+                    </div>
+
+                    <div class="hidden text-left" data-token-field>
+                        <input type="password" data-hf-token placeholder="hf_..."
+                            class="border-b-2 text-base px-2 py-3 outline-0 w-full">
+                        <p class="text-xs text-black/40 mt-1">This model needs a Hugging Face token — or add <code>HF_TOKEN</code> to your <code>.env</code> instead.</p>
+                    </div>
+
+                    <div class="hidden text-left" data-quant-field>
+                        <p class="text-sm text-black/60 mb-2">Choose a quant:</p>
+                        <div class="space-y-1 text-sm" data-quant-list></div>
+                        <p class="text-xs text-black/40 mt-2">Higher-precision quants (larger files) tend to give more accurate results, at the cost of more disk space and slower analysis.</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Slide Two | Loader -->
             <div class="hidden" data-slide-two>
                 <div class="pancake-loader">
                     <div class="pancake-loader__scene">
@@ -242,21 +286,49 @@
                         <div class="pancake-loader__syrup pancake-loader__syrup--right"></div>
                     </div>
                     <p class="pancake-loader__text">Loading...</p>
+                    <div class="hidden w-64 mt-4" data-download-progress>
+                        <div class="h-2 bg-black/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-amber-500 transition-[width] duration-300" style="width: 0%" data-download-progress-bar></div>
+                        </div>
+                        <p class="text-xs text-black/50 text-center mt-2" data-download-progress-text></p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Slide Three | Result -->
             <div class="w-full mb-8 hidden" data-slide-three>
                 <div class="w-full flex justify-between items-center mb-6">
-                    <h3 class="text-2xl">Here's what we found</h3>
-                    <div class="space-x-4">
+                    <div class="flex items-center gap-5">
+                        <h3 class="text-2xl">Here's what we found</h3>
+                        <div class="hidden space-x-3 text-sm" data-result-tabs style="font-family: 'Instrument Sans', system-ui;">
+                            <span class="cursor-pointer text-black" data-tab="result">Result</span>
+                            <span class="cursor-pointer text-black/50 hover:text-black" data-tab="analysis">LLM Analysis</span>
+                            <span class="cursor-pointer text-black/50 hover:text-black" data-tab="structured">Structured Data</span>
+                        </div>
+                    </div>
+                    <div class="space-x-4" data-result-controls>
                         <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-show-markdown>Show Markdown</p>
                         <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-copy-site-data>Copy</p>
                     </div>
                 </div>
-                <div class="text-sm max-h-[70vh] overflow-scroll" style="scrollbar-color: rgb(106, 106, 106) transparent; scrollbar-width: thin;">
+
+                <div data-tab-panel="result" class="text-sm max-h-[70vh] overflow-scroll" style="scrollbar-color: rgb(106, 106, 106) transparent; scrollbar-width: thin;">
                     <code data-scraped-site></code>
                 </div>
+
+                <div data-tab-panel="analysis" class="hidden text-sm max-h-[70vh] overflow-scroll whitespace-pre-wrap" style="scrollbar-color: rgb(106, 106, 106) transparent; scrollbar-width: thin;">
+                    <div class="w-full flex justify-end mb-2">
+                        <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-copy-analysis>Copy</p>
+                    </div>
+                    <div data-llm-analysis></div>
+                </div>
+
+                <div data-tab-panel="structured" class="hidden text-sm max-h-[70vh] overflow-scroll" style="scrollbar-color: rgb(106, 106, 106) transparent; scrollbar-width: thin;">
+                    <div class="w-full flex justify-end mb-2">
+                        <p class="text-sm text-black/50 hover:text-black cursor-pointer inline-block" data-copy-structured>Copy JSON</p>
+                    </div>
+                    <code data-structured-data></code>
+                </div>
+
                 <span data-navigate-slide-1 class="text-base font-semibold mt-4 block cursor-pointer" style="font-weight: 200;"><span class=" mr-1"><-</span>Try it with another site</span>
             </div>
         </div>
@@ -267,7 +339,7 @@
     </footer>
 
     <script>
-        // slides 
+        // slides
         const slide1 = document.querySelector('[data-slide-one]')
         const slide2 = document.querySelector('[data-slide-two]')
         const slide3 = document.querySelector('[data-slide-three]')
@@ -278,7 +350,151 @@
             slide1.classList.remove('hidden')
         })
 
-        // form
+        const modeToggle = document.querySelector('[data-mode-toggle]')
+        const modeToggleKnob = document.querySelector('[data-mode-toggle-knob]')
+        const llmFields = document.querySelector('[data-llm-fields]')
+        let isLlmMode = false
+
+        modeToggle.addEventListener('click', () => {
+            isLlmMode = !isLlmMode
+            llmFields.classList.toggle('hidden', !isLlmMode)
+            modeToggle.classList.toggle('bg-black/60', isLlmMode)
+            modeToggleKnob.style.transform = isLlmMode ? 'translateX(20px)' : 'translateX(0)'
+        })
+
+        const modelNameInput = document.querySelector('[data-model-name]')
+        const modelError = document.querySelector('[data-model-error]')
+        const tokenField = document.querySelector('[data-token-field]')
+        const hfTokenInput = document.querySelector('[data-hf-token]')
+        const quantField = document.querySelector('[data-quant-field]')
+        const quantList = document.querySelector('[data-quant-list]')
+        const cachedModelsList = document.querySelector('[data-cached-models-list]')
+
+        let modelInfo = null
+        let debounceTimer
+
+        async function refreshCachedModels() {
+            const res = await fetch('/llm/cached-models')
+            const { repoIds } = await res.json()
+            cachedModelsList.innerHTML = repoIds.map((id) => `<option value="${id}"></option>`).join('')
+        }
+        refreshCachedModels()
+
+        const fadeIn = (el) => {
+            el.classList.remove('hidden')
+            requestAnimationFrame(() => { el.style.opacity = '1' })
+        }
+        const fadeOut = (el) => {
+            el.style.opacity = '0'
+            setTimeout(() => el.classList.add('hidden'), 300)
+        }
+
+        modelNameInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer)
+            debounceTimer = setTimeout(checkModel, 500)
+        })
+
+        async function checkModel() {
+            const name = modelNameInput.value.trim()
+            modelError.classList.add('hidden')
+            fadeOut(tokenField)
+            fadeOut(quantField)
+            modelInfo = null
+
+            if (!name) return
+
+            const res = await fetch(`/llm/model-info?name=${encodeURIComponent(name)}`)
+            const data = await res.json()
+
+            if (!data.exists) {
+                modelError.textContent = `Couldn't find "${name}" on Hugging Face.`
+                modelError.classList.remove('hidden')
+                return
+            }
+
+            modelInfo = data
+
+            if (data.gated !== false && !data.hfTokenInEnv) {
+                fadeIn(tokenField)
+            }
+
+            quantList.innerHTML = data.quants.map((q) => `
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="quant" value="${q.file}" ${q.file === data.recommendedQuant ? 'checked' : ''}>
+                    <span>${q.quant}</span>
+                    ${q.file === data.recommendedQuant ? '<span class="text-xs text-black/40">recommended</span>' : ''}
+                    ${q.cached ? '<span class="text-xs text-green-600">✓ already downloaded, no need to re-download</span>' : ''}
+                </label>
+            `).join('')
+
+            fadeIn(quantField)
+        }
+
+        const resultTabs = document.querySelector('[data-result-tabs]')
+        const resultControls = document.querySelector('[data-result-controls]')
+        const tabs = document.querySelectorAll('[data-tab]')
+        const panels = document.querySelectorAll('[data-tab-panel]')
+        const llmAnalysisEl = document.querySelector('[data-llm-analysis]')
+        const structuredDataEl = document.querySelector('[data-structured-data]')
+
+        function setTab(name) {
+            tabs.forEach((t) => {
+                t.classList.toggle('text-black', t.dataset.tab === name)
+                t.classList.toggle('text-black/50', t.dataset.tab !== name)
+            })
+            panels.forEach((p) => p.classList.toggle('hidden', p.dataset.tabPanel !== name))
+            resultControls.classList.toggle('hidden', name !== 'result')
+        }
+
+        tabs.forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)))
+
+        const downloadProgressEl = document.querySelector('[data-download-progress]')
+        const downloadProgressBar = document.querySelector('[data-download-progress-bar]')
+        const downloadProgressText = document.querySelector('[data-download-progress-text]')
+        let progressPollTimer = null
+
+        const formatBytes = (bytes) => `${(bytes / 1e6).toFixed(0)} MB`
+
+        const STAGE_TEXT = {
+            idle: 'Getting started…',
+            scraping: 'Scraping the page…',
+            'checking-model': 'Checking the model…',
+            'loading-model': 'Loading model into memory…',
+            'writing-json': 'Writing structured JSON…',
+            done: 'Done!',
+        }
+
+        async function pollProgress() {
+            const res = await fetch('/llm/progress')
+            const p = await res.json()
+
+            downloadProgressBar.style.width = `${p.percent}%`
+
+            if (p.stage === 'downloading-model') {
+                downloadProgressText.innerText = p.totalBytes
+                    ? `Downloading ${p.file}… ${p.percent}% (${formatBytes(p.downloadedBytes)} / ${formatBytes(p.totalBytes)})`
+                    : `Downloading ${p.file}…`
+            } else if (p.stage === 'analyzing') {
+                downloadProgressText.innerText = `Analyzing section ${p.chunk} of ${p.totalChunks}…`
+            } else {
+                downloadProgressText.innerText = STAGE_TEXT[p.stage] || p.detail || 'Working…'
+            }
+        }
+
+        function startProgressPolling() {
+            downloadProgressEl.classList.remove('hidden')
+            downloadProgressBar.style.width = '0%'
+            downloadProgressText.innerText = STAGE_TEXT.idle
+            pollProgress()
+            progressPollTimer = setInterval(pollProgress, 500)
+        }
+
+        function stopProgressPolling() {
+            clearInterval(progressPollTimer)
+            progressPollTimer = null
+            downloadProgressEl.classList.add('hidden')
+        }
+
         let extractedData = null
         const handleScrape = document.querySelector('[data-handle-scrape]')
         const urlInput = document.querySelector('input#link')
@@ -287,21 +503,62 @@
         handleScrape.addEventListener('click', async () => {
             const url = urlInput.value
 
+            if (isLlmMode && !modelInfo) {
+                modelError.textContent = 'Enter a valid Hugging Face model first.'
+                modelError.classList.remove('hidden')
+                return
+            }
+
             showLoader()
-            const res = await fetch('/scrape', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url })
-            })
+            if (isLlmMode) startProgressPolling()
+
+            let res
+            if (isLlmMode) {
+                const quant = document.querySelector('input[name="quant"]:checked')
+                res = await fetch('/llm/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url,
+                        modelName: modelNameInput.value.trim(),
+                        quantFile: quant?.value,
+                        hfToken: hfTokenInput.value || undefined,
+                    })
+                })
+            } else {
+                res = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                })
+            }
 
             const data = await res.json()
+
+            stopProgressPolling()
+
+            if (!res.ok) {
+                slide2.classList.add('hidden')
+                slide1.classList.remove('hidden')
+                if (isLlmMode) {
+                    modelError.textContent = data.error || 'Something went wrong while scraping.'
+                    modelError.classList.remove('hidden')
+                }
+                return
+            }
 
             hideLoader()
 
             extractedData = data
             result.innerText = extractedData.site_data_as_html
+
+            resultTabs.classList.toggle('hidden', !isLlmMode)
+            if (isLlmMode) {
+                llmAnalysisEl.innerText = data.llm_analysis_markdown
+                structuredDataEl.innerText = JSON.stringify(data.structured_data, null, 2)
+                setTab('result')
+                refreshCachedModels()
+            }
         })
 
         const showLoader = () => {
@@ -313,8 +570,7 @@
             slide2.classList.add('hidden')
             slide3.classList.remove('hidden')
         }
-        
-        // copy
+
         const copy = document.querySelector('[data-copy-site-data]')
         copy.addEventListener('click', () => {
             navigator.clipboard.writeText(result.innerText)
@@ -324,7 +580,24 @@
             }, 3000)
         })
 
-        // toggle html and markdown
+        const copyStructured = document.querySelector('[data-copy-structured]')
+        copyStructured.addEventListener('click', () => {
+            navigator.clipboard.writeText(structuredDataEl.innerText)
+            copyStructured.innerText = 'Copied!'
+            setTimeout(() => {
+                copyStructured.innerText = 'Copy JSON'
+            }, 3000)
+        })
+
+        const copyAnalysis = document.querySelector('[data-copy-analysis]')
+        copyAnalysis.addEventListener('click', () => {
+            navigator.clipboard.writeText(llmAnalysisEl.innerText)
+            copyAnalysis.innerText = 'Copied!'
+            setTimeout(() => {
+                copyAnalysis.innerText = 'Copy'
+            }, 3000)
+        })
+
         const toggleContent = document.querySelector('[data-show-markdown]')
         let flag = true
         toggleContent.addEventListener('click', () => {
