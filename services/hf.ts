@@ -1,24 +1,9 @@
-export interface HfSibling {
-  rfilename: string
-  size?: number
-}
-
-export interface HfModelInfo {
-  exists: boolean
-  gated: false | "auto" | "manual"
-  siblings: HfSibling[]
-}
-
-export interface GgufQuant {
-  file: string
-  quant: string
-  size?: number
-}
+import type { GgufQuant, HfModelInfo, HfSibling } from "./types"
 
 const QUANT_RE = /[-_](IQ\d[A-Z0-9_]*|Q\d[A-Z0-9_]*|BF16|F16|F32)\.gguf$/i
 
 export async function getModelInfo(repoId: string): Promise<HfModelInfo> {
-  const res = await fetch(`https://huggingface.co/api/models/${repoId}`)
+  const res = await fetch(`https://huggingface.co/api/models/${repoId}?blobs=true`)
 
   if (res.status === 404) {
     return { exists: false, gated: false, siblings: [] }

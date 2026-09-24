@@ -130,5 +130,5 @@ MIT
 
 <div align="center">
   <br />
-  Made with ❤️ (and one (1) unnecessarily dramatic README) by Pancakes
+  Made with ❤️ by Pancakes
 </div>

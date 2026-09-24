@@ -1,51 +1,31 @@
 import { existsSync, mkdirSync, appendFileSync, writeFileSync, readFileSync, renameSync } from "node:fs"
 import path from "node:path"
-import { getLlama, LlamaChatSession, type Llama, type LlamaChatSession as LlamaChatSessionType } from "node-llama-cpp"
+import { getLlama, LlamaChatSession, type Llama } from "node-llama-cpp"
+import type { AnalysisResult, ChunkResult, DeviceMemory, Finding, PipelineProgress, QuantFit, RegistryEntry, Stage } from "./types"
 
 export const MODELS_DIR = "./models"
 export const OUTPUT_DIR = "./output"
 const REGISTRY_PATH = path.join(MODELS_DIR, "registry.json")
 const CHUNK_LINES = 300
+const RUNTIME_OVERHEAD_BYTES = 1.5e9
 
-export interface Finding {
-  label: string
-  value: string
+let llamaInstance: Promise<Llama> | null = null
+const sharedLlama = () => (llamaInstance ??= getLlama())
+
+export async function getDeviceMemory(): Promise<DeviceMemory> {
+  const llama = await sharedLlama()
+  const [vram, ram] = await Promise.all([llama.getVramState(), llama.getRamState()])
+  return { gpu: llama.gpu, vramFree: vram.free, ramFree: ram.free }
 }
 
-interface ChunkResult {
-  summary: string
-  key_points: string[]
-  findings: Finding[]
+export function estimateFit(size: number | undefined, device: DeviceMemory): QuantFit {
+  if (!size) return "unknown"
+  const needed = size + RUNTIME_OVERHEAD_BYTES
+  if (device.gpu && needed <= device.vramFree) return "gpu"
+  if (needed <= device.ramFree) return "cpu"
+  return "too-big"
 }
 
-// A single pipeline-wide progress tracker, covering every stage from "we just
-// got the request" to "done" — not just the model download. It's a module-level
-// singleton (this is a single-user local tool, one run at a time), polled by
-// the frontend's loading screen.
-export type Stage =
-  | "idle"
-  | "scraping"
-  | "checking-model"
-  | "downloading-model"
-  | "loading-model"
-  | "analyzing"
-  | "writing-json"
-  | "done"
-  | "error"
-
-export interface PipelineProgress {
-  stage: Stage
-  detail: string
-  percent: number
-  downloadedBytes?: number
-  totalBytes?: number
-  file?: string
-  chunk?: number
-  totalChunks?: number
-}
-
-// Coarse, approximate percentages for stages we can't measure precisely.
-// "downloading-model" and "analyzing" override this with real progress while active.
 const STAGE_PERCENTS: Record<Stage, number> = {
   idle: 0,
   scraping: 10,
@@ -75,11 +55,6 @@ function cachedFileName(repoId: string, quantFile: string): string {
 
 export function isModelCached(repoId: string, quantFile: string): boolean {
   return existsSync(path.join(MODELS_DIR, cachedFileName(repoId, quantFile)))
-}
-
-interface RegistryEntry {
-  repoId: string
-  quantFile: string
 }
 
 function readRegistry(): RegistryEntry[] {
@@ -157,7 +132,7 @@ export async function loadModel(repoId: string, quantFile: string, hfToken?: str
   const modelPath = await ensureModelDownloaded(repoId, quantFile, hfToken)
 
   setStage("loading-model", "Loading model into memory…")
-  const llama = await getLlama()
+  const llama = await sharedLlama()
   const model = await llama.loadModel({ modelPath })
   const context = await model.createContext()
   const session = new LlamaChatSession({ contextSequence: context.getSequence() })
@@ -218,11 +193,6 @@ function renderChunkMarkdown(chunkIndex: number, totalChunks: number, summary: s
   return [`## Section ${chunkIndex} of ${totalChunks}`, summary, `**Key points:**`, keyPointsText].join("\n\n")
 }
 
-// Small local models have no memory of earlier chunks and nothing in the
-// prompt asks them to notice repetition — so boilerplate (nav bars, footers,
-// repeated CTAs) tends to get re-extracted verbatim, chunk after chunk.
-// Rather than rely on the model to catch that itself, we dedupe in code:
-// once a key point or finding has been seen, later exact repeats are dropped.
 function normalize(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ")
 }
@@ -238,10 +208,10 @@ function dedupeAgainst<T>(items: T[], seen: Set<string>, keyOf: (item: T) => str
 
 export async function analyzeMarkdown(
   markdown: string,
-  session: LlamaChatSessionType,
+  session: LlamaChatSession,
   llama: Llama,
   runId: string,
-): Promise<{ analysisMarkdown: string; structured: Finding[] }> {
+): Promise<AnalysisResult> {
   if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true })
   const outputFile = path.join(OUTPUT_DIR, `${runId}.json`)
   writeFileSync(outputFile, "[\n")
@@ -294,8 +264,6 @@ Always include at least one key_point and at least one finding. If nothing looks
     )
     structured.push(...newFindings)
 
-    // The raw, undeduped model output still goes to the audit-trail file —
-    // that's the "what did the model actually say" record, unfiltered.
     const prefix = i === 0 ? "" : ",\n"
     appendFileSync(outputFile, `${prefix}${JSON.stringify({ chunk: i + 1, ...parsed }, null, 2)}`)
   }

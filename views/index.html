@@ -121,8 +121,6 @@
             letter-spacing: 0.08em;
         }
 
-        /* Keyframes */
-
         @keyframes pancake-drop {
             0% {
                 opacity: 0;
@@ -253,6 +251,7 @@
                         <input type="text" data-model-name list="cached-models-list" placeholder="unsloth/LFM2.5-8B-A1B-GGUF"
                             class="border-b-2 text-base px-2 py-3 outline-0 w-full placeholder:text-gray-400">
                         <datalist id="cached-models-list" data-cached-models-list></datalist>
+                        <p class="text-xs text-amber-700 mt-1">The model must be in GGUF format (e.g. a repo ending in <code>-GGUF</code> (recc. unsloth models)).</p>
                         <p class="text-xs text-black/40 mt-1">Some models require a Hugging Face token to download.</p>
                         <p class="text-xs text-black/40 mt-1">The bigger and more capable the model, the better the analysis it can produce.</p>
                         <p class="text-xs text-red-600 mt-1 hidden" data-model-error></p>
@@ -266,6 +265,7 @@
 
                     <div class="hidden text-left" data-quant-field>
                         <p class="text-sm text-black/60 mb-2">Choose a quant:</p>
+                        <p class="text-xs text-black/40 mb-2" data-device-info></p>
                         <div class="space-y-1 text-sm" data-quant-list></div>
                         <p class="text-xs text-black/40 mt-2">Higher-precision quants (larger files) tend to give more accurate results, at the cost of more disk space and slower analysis.</p>
                     </div>
@@ -339,7 +339,6 @@
     </footer>
 
     <script>
-        // slides
         const slide1 = document.querySelector('[data-slide-one]')
         const slide2 = document.querySelector('[data-slide-two]')
         const slide3 = document.querySelector('[data-slide-three]')
@@ -368,10 +367,19 @@
         const hfTokenInput = document.querySelector('[data-hf-token]')
         const quantField = document.querySelector('[data-quant-field]')
         const quantList = document.querySelector('[data-quant-list]')
+        const deviceInfo = document.querySelector('[data-device-info]')
         const cachedModelsList = document.querySelector('[data-cached-models-list]')
 
         let modelInfo = null
-        let debounceTimer
+
+        const formatGb = (bytes) => `${(bytes / 1e9).toFixed(1)} GB`
+
+        const FIT_BADGES = {
+            gpu: { text: 'fits on your GPU', color: 'text-green-600' },
+            cpu: { text: 'CPU only, will be slow', color: 'text-amber-600' },
+            'too-big': { text: 'too big for this device', color: 'text-red-600' },
+            unknown: { text: 'size unknown', color: 'text-black/40' },
+        }
 
         async function refreshCachedModels() {
             const res = await fetch('/llm/cached-models')
@@ -386,20 +394,26 @@
         }
         const fadeOut = (el) => {
             el.style.opacity = '0'
-            setTimeout(() => el.classList.add('hidden'), 300)
+            setTimeout(() => {
+                if (el.style.opacity === '0') el.classList.add('hidden')
+            }, 300)
         }
 
-        modelNameInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer)
-            debounceTimer = setTimeout(checkModel, 500)
-        })
-
-        async function checkModel() {
-            const name = modelNameInput.value.trim()
+        const resetModel = () => {
             modelError.classList.add('hidden')
             fadeOut(tokenField)
             fadeOut(quantField)
             modelInfo = null
+        }
+
+        modelNameInput.addEventListener('input', resetModel)
+        modelNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') checkModel()
+        })
+
+        async function checkModel() {
+            const name = modelNameInput.value.trim()
+            resetModel()
 
             if (!name) return
 
@@ -412,16 +426,29 @@
                 return
             }
 
+            if (data.quants.length === 0) {
+                modelError.textContent = `"${name}" has no GGUF files to download.`
+                modelError.classList.remove('hidden')
+                return
+            }
+
             modelInfo = data
 
             if (data.gated !== false && !data.hfTokenInEnv) {
                 fadeIn(tokenField)
             }
 
+            const { gpu, vramFree, ramFree } = data.device
+            deviceInfo.textContent = gpu
+                ? `Your device: ${gpu.toUpperCase()} GPU with ${formatGb(vramFree)} free VRAM, ${formatGb(ramFree)} free RAM`
+                : `Your device: no GPU detected, ${formatGb(ramFree)} free RAM`
+
             quantList.innerHTML = data.quants.map((q) => `
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="quant" value="${q.file}" ${q.file === data.recommendedQuant ? 'checked' : ''}>
                     <span>${q.quant}</span>
+                    ${q.size ? `<span class="text-xs text-black/40">${formatGb(q.size)}</span>` : ''}
+                    <span class="text-xs ${FIT_BADGES[q.fit].color}">${FIT_BADGES[q.fit].text}</span>
                     ${q.file === data.recommendedQuant ? '<span class="text-xs text-black/40">recommended</span>' : ''}
                     ${q.cached ? '<span class="text-xs text-green-600">✓ already downloaded, no need to re-download</span>' : ''}
                 </label>
@@ -504,7 +531,13 @@
             const url = urlInput.value
 
             if (isLlmMode && !modelInfo) {
-                modelError.textContent = 'Enter a valid Hugging Face model first.'
+                modelError.textContent = 'Enter a valid Hugging Face model and press Enter first.'
+                modelError.classList.remove('hidden')
+                return
+            }
+
+            if (isLlmMode && modelInfo.gated !== false && !modelInfo.hfTokenInEnv && !hfTokenInput.value) {
+                modelError.textContent = 'This model needs a Hugging Face token.'
                 modelError.classList.remove('hidden')
                 return
             }

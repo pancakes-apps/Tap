@@ -1,7 +1,7 @@
 import index from './views/index.html';
 import scrapeModule from './services/scrape';
 import { getModelInfo, listGgufQuants, pickMedianQuant } from './services/hf';
-import { isModelCached, loadModel, analyzeMarkdown, getProgress, setStage, listCachedModels } from './services/llm';
+import { isModelCached, loadModel, analyzeMarkdown, getProgress, setStage, listCachedModels, getDeviceMemory, estimateFit } from './services/llm';
 
 const server = Bun.serve({
   port: 3000,
@@ -24,14 +24,23 @@ const server = Bun.serve({
         const info = await getModelInfo(name)
         if (!info.exists) return Response.json({ exists: false })
 
-        const quants = listGgufQuants(info.siblings)
-        const recommendedQuant = pickMedianQuant(quants)
+        const device = await getDeviceMemory()
+        const quants = listGgufQuants(info.siblings).map((q) => ({
+          ...q,
+          fit: estimateFit(q.size, device),
+          cached: isModelCached(name, q.file),
+        }))
+
+        const onGpu = quants.filter((q) => q.fit === "gpu")
+        const onCpu = quants.filter((q) => q.fit === "cpu")
+        const recommendedQuant = pickMedianQuant(onGpu.length ? onGpu : onCpu.length ? onCpu : quants)
 
         return Response.json({
           exists: true,
           gated: info.gated,
           hfTokenInEnv: !!Bun.env.HF_TOKEN,
-          quants: quants.map((q) => ({ ...q, cached: isModelCached(name, q.file) })),
+          device,
+          quants,
           recommendedQuant,
         })
       }
