@@ -69,7 +69,7 @@ curl -X POST http://localhost:3000/scrape \
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
   <br />
