@@ -10,7 +10,6 @@ const scrapeModule = async ( url: string ) => {
     
     const page = await browser.newPage()
     
-    // Enable request interception FIRST
     await page.setRequestInterception(true)
     
     page.on('request', (req) => {
@@ -45,5 +44,6 @@ const scrapeModule = async ( url: string ) => {
         site_data_as_markdown: modifiedHTMLAsMarkdown,
     }
 }
+
 
 export default scrapeModule
